@@ -1,0 +1,88 @@
+import yfinance as yf
+import pandas as pd
+from datetime import datetime, timedelta
+
+# Function to calculate Pivot Points and levels
+def calculate_pivot_points(data):
+    if len(data) < 2:
+        raise ValueError("Not enough data to calculate Pivot Points")
+    
+    prev_day = data.iloc[-2]
+    high = prev_day['High']
+    low = prev_day['Low']
+    close = prev_day['Close']
+    
+    pp = (high + low + close) / 3
+    r1 = (2 * pp) - low
+    s1 = (2 * pp) - high
+    r2 = pp + (high - low)
+    s2 = pp - (high - low)
+    
+    return pp, r1, s1, r2, s2
+
+# Function to simulate API behavior
+def simulate_api_call(option_type, action):
+    # Simulated response handling
+    if option_type not in ["call", "put"]:
+        raise ValueError("Invalid option type")
+    if action not in ["SELL", "BUY"]:
+        raise ValueError("Invalid action")
+    
+    print(f"Simulated: {action} {option_type} option")
+
+# Downloading data for Bank Nifty (example symbol; replace with actual if needed)
+bank_nifty_symbol = "^NSEBANK"
+data = yf.download(bank_nifty_symbol, period='1mo', interval='30m')
+
+# Filter data for the last 2 days
+end_date = datetime.now()
+start_date = end_date - timedelta(days=2)
+data = data.loc[start_date:end_date]
+
+# Check if data is available
+if data.empty:
+    raise ValueError("No data fetched. Please check the symbol and internet connection.")
+
+data.sort_index(inplace=True)
+
+# Calculate Pivot Points and levels
+try:
+    pp, r1, s1, r2, s2 = calculate_pivot_points(data)
+    print(f"Pivot Point: {pp}")
+    print(f"Resistance 1: {r1}")
+    print(f"Support 1: {s1}")
+    print(f"Resistance 2: {r2}")
+    print(f"Support 2: {s2}")
+except ValueError as e:
+    print(f"Error in calculating Pivot Points: {e}")
+    raise
+
+# Simulate the trading logic
+for index, row in data.iloc[1:].iterrows():  # Start iterating from the second candle onwards
+    try:
+        if row['High'] > r1:
+            print('Sell at-the-money put option')
+            option_symbol = "BANKNIFTY24AUG21000PE"  # Example, replace with actual option symbol
+            
+            # Simulated order placement
+            simulate_api_call("put", "SELL")
+            
+            # Set target option premium price (Rs 20)
+            print(f"Target Price set at: Rs 20")
+            print(f"Simulated Stop Loss set at: Rs {row['Close'] + 10}")
+            break
+
+        elif row['Low'] < s1:
+            print('Sell at-the-money call option')
+            option_symbol = "BANKNIFTY24AUG21000CE"  # Example, replace with actual option symbol
+            
+            # Simulated order placement
+            simulate_api_call("call", "SELL")
+            
+            # Set target option premium price (Rs 20)
+            print(f"Target Price set at: Rs 20")
+            print(f"Simulated Stop Loss set at: Rs {row['Close'] + 10}")
+            break
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
